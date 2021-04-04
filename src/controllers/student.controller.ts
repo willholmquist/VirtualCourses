@@ -7,23 +7,25 @@ import {
   Where,
 } from '@loopback/repository';
 import {
-  post,
-  param,
+  del,
   get,
   getModelSchemaRef,
+  param,
   patch,
+  post,
   put,
-  del,
   requestBody,
   response,
 } from '@loopback/rest';
 import {Student} from '../models';
-import {StudentRepository} from '../repositories';
+import {StudentRepository, UserRepository} from '../repositories';
 
 export class StudentController {
   constructor(
     @repository(StudentRepository)
-    public studentRepository : StudentRepository,
+    public studentRepository: StudentRepository,
+    @repository(UserRepository)
+    public userRepository: UserRepository,
   ) {}
 
   @post('/student')
@@ -44,7 +46,17 @@ export class StudentController {
     })
     student: Omit<Student, 'id'>,
   ): Promise<Student> {
-    return this.studentRepository.create(student);
+    let newStudent = await this.studentRepository.create(student);
+    let newUser = {
+      username: newStudent.document,
+      password: `udo${newStudent.document}`,
+      role: 1,
+      studentId: newStudent.id,
+    };
+    let user = await this.userRepository.create(newUser);
+    user.password = '';
+    newStudent.user = user;
+    return newStudent;
   }
 
   @get('/student/count')
@@ -52,9 +64,7 @@ export class StudentController {
     description: 'Student model count',
     content: {'application/json': {schema: CountSchema}},
   })
-  async count(
-    @param.where(Student) where?: Where<Student>,
-  ): Promise<Count> {
+  async count(@param.where(Student) where?: Where<Student>): Promise<Count> {
     return this.studentRepository.count(where);
   }
 
@@ -106,7 +116,8 @@ export class StudentController {
   })
   async findById(
     @param.path.string('id') id: string,
-    @param.filter(Student, {exclude: 'where'}) filter?: FilterExcludingWhere<Student>
+    @param.filter(Student, {exclude: 'where'})
+    filter?: FilterExcludingWhere<Student>,
   ): Promise<Student> {
     return this.studentRepository.findById(id, filter);
   }

@@ -1,4 +1,4 @@
-import {Entity, model, property, belongsTo} from '@loopback/repository';
+import {belongsTo, Entity, model, property} from '@loopback/repository';
 import {Student} from './student.model';
 
 @model()
@@ -26,7 +26,7 @@ export class User extends Entity {
     type: 'string',
     required: true,
   })
-  role: string;
+  role: number;
 
   @belongsTo(() => Student)
   studentId: string;
